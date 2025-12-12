@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importação de Exames - Sistema Tasy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '●';
+            color: #667eea;
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            background: white;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .file-status {
+            font-size: 12px;
+            color: #28a745;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .file-status.show {
+            display: block;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Sistema de Importação de Exames</h1>
+        <p class="subtitle">Processamento automático de resultados laboratoriais para o sistema Tasy</p>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="section">
+            <div class="section-title">1. Informações do Protocolo</div>
+            
+            <div class="form-group">
+                <label>Estabelecimento <span class="required">*</span></label>
+                <select id="estabelecimento" required>
+                    <option value="">Selecione o estabelecimento</option>
+                    <option value="1">MATRIZ</option>
+                    <option value="3">MONTE SERRAT</option>
+                    <option value="4">CONVENIOS</option>
+                    <option value="5">RIO VERMELHO</option>
+                    <option value="7">SANTO ESTEVAO</option>
+                </select>
+            </div>
+
+
+
+            <div class="form-group">
+                <label>Protocolo <span class="required">*</span></label>
+                <input type="text" id="protocolo" placeholder="Digite o número ou código do protocolo" required>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">2. Upload dos Arquivos</div>
+            
+            <div class="form-group">
+                <label>Planilha Tasy (Pacientes e Atendimentos) <span class="required">*</span></label>
+                <input type="file" id="fileTasy" accept=".xls,.xlsx,.csv" required>
+                <div class="file-status" id="statusTasy"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Planilha Laboratório 1</label>
+                <input type="file" id="fileLab1" accept=".xls,.xlsx">
+                <div class="file-status" id="statusLab1"></div>
+                <p class="info-text">Primeira planilha do laboratório (qualquer ordem de exames)</p>
+            </div>
+
+            <div class="form-group">
+                <label>Planilha Laboratório 2</label>
+                <input type="file" id="fileLab2" accept=".xls,.xlsx">
+                <div class="file-status" id="statusLab2"></div>
+                <p class="info-text">Segunda planilha do laboratório (qualquer ordem de exames)</p>
+            </div>
+        </div>
+
+        <button id="btnProcessar" onclick="processarArquivos()">
+            🚀 Processar e Gerar Arquivo
+        </button>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
